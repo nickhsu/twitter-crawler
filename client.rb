@@ -93,16 +93,16 @@ loop do
 			
 			user_data['is_active'] = false
 			db['user'].update({:id => user_data['id']}, user_data)
-		rescue Twitter::BadGateway => ex
-			log.info ex.to_s
-			sleep(10)
-			retry
 		rescue Twitter::BadRequest => ex
 			log.info ex.to_s
 			log.info "sleep..."
 			sleep(60 * 30)
 				
 			log.info Twitter.rate_limit_status.inspect
+			retry
+		rescue Exception => ex
+			log.info ex.to_s
+			sleep(10)
 			retry
 		end
 	end
