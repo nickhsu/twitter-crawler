@@ -11,7 +11,7 @@ def is_active(last_updated)
 end
 
 GET_FRIENDS = false
-SERVER = "linux.cs.ccu.edu.tw"
+SERVER = "gaisq.cs.ccu.edu.tw"
 
 log = Logger.new(STDOUT)
 log.level = Logger::DEBUG
