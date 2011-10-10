@@ -29,9 +29,12 @@ class TwitterCrawler
 		@log.info Twitter.rate_limit_status.inspect
 		
 		threads = []
-		(1..@opts[:threads]).each do 
-			start_fetch
-			sleep(5) # avoid get dup user data
+		(1..@opts[:threads]).each do
+			@log.info "start new thread"
+			threads << Thread.new {
+				start_fetch
+			}
+			sleep(2) # avoid get dup user data
 		end
 
 		threads.each do |t|
