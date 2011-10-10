@@ -34,7 +34,7 @@ class TwitterCrawler
 			threads << Thread.new {
 				start_fetch
 			}
-			sleep(2) # avoid get dup user data
+			sleep(10) # avoid get dup user data
 		end
 
 		threads.each do |t|
