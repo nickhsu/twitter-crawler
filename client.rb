@@ -5,111 +5,118 @@ require "mongo"
 require "date"
 require "logger"
 
-def is_active(last_updated)
-	#update after 7 days before
-	return (DateTime.now - last_updated).to_i <= 7
-end
+class TwitterCrawler
+	def initialize(server, gateway, opts = {})
+		@server = server
+		@gateway = gateway
+		@opts = opts
+		@opts[:threads] ||= 10
+		@opts[:get_friend] ||= false
 
-GET_FRIENDS = false
-SERVER = "gaisq.cs.ccu.edu.tw"
+		@db = Mongo::Connection.new(@server).db("twitter")
 
-log = Logger.new(STDOUT)
-log.level = Logger::DEBUG
+		@log = Logger.new(STDOUT)
+		@log.level = Logger::DEBUG
 
-db = Mongo::Connection.new(SERVER).db("twitter")
+		Twitter.configure do |config|
+			config.gateway = "twitter1-nickhsutw.apigee.com"
+		end
 
-=begin
-#get api key
-api_key = db["api_key"].find_and_modify(
-	:query => {"in_used" => false},
-	:update => {"$set" => {"in_used" => true}}
-)
+		@log.debug @opts.inspect
+	end
 
-log.debug api_key.inspect
-=end
+	def start
+		@log.info Twitter.rate_limit_status.inspect
+		
+		threads = []
+		(1..@opts[:threads]).each do 
+			start_fetch
+			sleep(5) # avoid get dup user data
+		end
 
-#set API key
-Twitter.configure do |config|
-	#config.consumer_key = api_key['consumer_key']
-	#config.consumer_secret = api_key["consumer_secret"]
-	#config.oauth_token = api_key["oauth_token"]
-	#config.oauth_token_secret = api_key["oauth_token_secret"]
-	config.gateway = "twitter1-nickhsutw.apigee.com"
-end
-log.info Twitter.rate_limit_status.inspect
-	
-#db["api_key"].update(
-#	{:consumer_key => api_key["consumer_key"]},
-#	{"$set" => {"in_used" => false}}
-#)
-
-skip_size = 0
-loop do 
-	user_datas = db['user'].find({
-		"$and" => [
-			{"$or" => [
-				{"is_active" => {"$exists" => false}},
-				{"is_active" => true}
-			]},
-			{"$or" => [
-				{"in_process" => {"$exists" => false}},
-				{"in_process" => false}
-			]}
-		]}).skip(skip_size).limit(100).to_a
-	db['user'].update(
-		{"id" => {"$in" => user_datas.map {|x| x['id']}}},
-		{"$set" => {'in_process' => true}},
-		{:multi => true}
-	)
-	
-	user_datas.each do |user_data|	
-		log.info "start fetch data id = #{user_data["id"]}"
-		begin
-			if GET_FRIENDS
-				log.info "get friends id = #{user_data["id"]}"
-				Twitter.friend_ids(user_data["id"])['ids'].each { |friend_id| db['user'].insert({:id => friend_id}) }
-			end
-
-			new_posts = Twitter.user_timeline(user_data["id"], {:count => 200, :trim_user => true, :include_rts => true})
-			
-			log.info "end fetch data id = #{user_data["id"]}"
-			#log.debug new_posts.inspect
-			
-			if new_posts.empty?
-				user_data['is_active'] = false
-			else
-				user_data['is_active'] = is_active(DateTime.parse(new_posts.first['created_at']))
-			end
-			
-			if user_data['posts'].nil?
-				user_data['posts'] = new_posts
-			else
-				user_data['posts'] += new_posts
-				user_data['posts'].uniq!
-			end
-
-			user_data['last_updated_at'] = Time.now
-			user_data['in_process'] = false
-			db['user'].update({:id => user_data['id']}, user_data)
-		rescue Twitter::Unauthorized => ex
-			log.info ex.to_s
-			
-			user_data['is_active'] = false
-			db['user'].update({:id => user_data['id']}, user_data)
-		rescue Twitter::BadRequest => ex
-			log.info ex.to_s
-			log.info "sleep..."
-			sleep(60 * 5)
-				
-			log.info Twitter.rate_limit_status.inspect
-			retry
-		rescue Exception => ex
-			log.info ex.to_s
-			sleep(10)
-			retry
+		threads.each do |t|
+			t.join
 		end
 	end
 
-	puts "finish a round"
-	skip_size += 100
+	private
+	
+	def is_active(last_updated)
+		#update after 7 days before
+		return (DateTime.now - last_updated).to_i <= 7
+	end
+
+	def start_fetch
+		loop do 
+			user_datas = @db['user'].find({
+				"$and" => [
+					{"$or" => [
+						{"is_active" => {"$exists" => false}},
+						{"is_active" => true}
+			]},
+				{"$or" => [
+					{"in_process" => {"$exists" => false}},
+					{"in_process" => false}
+			]}
+			]}).limit(100).to_a
+			@db['user'].update(
+				{"id" => {"$in" => user_datas.map {|x| x['id']}}},
+				{"$set" => {'in_process' => true}},
+				{:multi => true}
+			)
+
+			user_datas.each do |user_data|	
+				begin
+					if @opts[:get_friend]
+						@log.info "get friends id = #{user_data["id"]}"
+						Twitter.friend_ids(user_data["id"])['ids'].each do |friend_id|
+							@db['user'].insert({:id => friend_id})
+						end
+					end
+
+					@log.info "get posts id = #{user_data["id"]}"
+					new_posts = Twitter.user_timeline(user_data["id"], {:count => 200, :trim_user => true, :include_rts => true})
+
+					if new_posts.empty?
+						user_data['is_active'] = false
+					else
+						user_data['is_active'] = is_active(DateTime.parse(new_posts.first['created_at']))
+					end
+
+					if user_data['posts'].nil?
+						user_data['posts'] = new_posts
+					else
+						user_data['posts'] += new_posts
+						user_data['posts'].uniq!
+					end
+
+					user_data['last_updated_at'] = Time.now
+					user_data['in_process'] = false
+					@db['user'].update({:id => user_data['id']}, user_data)
+				rescue Twitter::Unauthorized => ex
+					@log.info ex.to_s
+
+					user_data['is_active'] = false
+					@db['user'].update({:id => user_data['id']}, user_data)
+				rescue Twitter::BadRequest => ex
+					@log.info ex.to_s
+					@log.info "sleep..."
+					sleep(60 * 5)
+
+					@log.info Twitter.rate_limit_status.inspect
+					retry
+				rescue Exception => ex
+					@log.info ex.to_s
+					retry
+				end
+			end
+		end
+	end
 end
+
+GET_FRIEND = true
+SERVER = "gaisq.cs.ccu.edu.tw"
+GATEWAY = "twitter1-nickhsutw.apigee.com"
+
+tc = TwitterCrawler.new(SERVER, GATEWAY, :threads => 50, :get_friend => GET_FRIEND)
+tc.start
