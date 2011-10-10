@@ -34,6 +34,7 @@ Twitter.configure do |config|
 	#config.consumer_secret = api_key["consumer_secret"]
 	#config.oauth_token = api_key["oauth_token"]
 	#config.oauth_token_secret = api_key["oauth_token_secret"]
+	config.gateway = "twitter1-nickhsutw.apigee.com"
 end
 log.info Twitter.rate_limit_status.inspect
 	
