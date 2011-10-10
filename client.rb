@@ -18,6 +18,7 @@ log.level = Logger::DEBUG
 
 db = Mongo::Connection.new(SERVER).db("twitter")
 
+=begin
 #get api key
 api_key = db["api_key"].find_and_modify(
 	:query => {"in_used" => false},
@@ -25,13 +26,14 @@ api_key = db["api_key"].find_and_modify(
 )
 
 log.debug api_key.inspect
+=end
 
 #set API key
 Twitter.configure do |config|
-	config.consumer_key = api_key['consumer_key']
-	config.consumer_secret = api_key["consumer_secret"]
-	config.oauth_token = api_key["oauth_token"]
-	config.oauth_token_secret = api_key["oauth_token_secret"]
+	#config.consumer_key = api_key['consumer_key']
+	#config.consumer_secret = api_key["consumer_secret"]
+	#config.oauth_token = api_key["oauth_token"]
+	#config.oauth_token_secret = api_key["oauth_token_secret"]
 end
 log.info Twitter.rate_limit_status.inspect
 	
@@ -96,7 +98,7 @@ loop do
 		rescue Twitter::BadRequest => ex
 			log.info ex.to_s
 			log.info "sleep..."
-			sleep(60 * 30)
+			sleep(60 * 5)
 				
 			log.info Twitter.rate_limit_status.inspect
 			retry
