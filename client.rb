@@ -13,7 +13,7 @@ class TwitterCrawler
 		@opts[:threads] ||= 10
 		@opts[:get_friend] ||= false
 
-		@db = Mongo::Connection.new(@server).db("twitter")
+		@db = Mongo::Connection.new(@server, nil, :pool_size => 5).db("twitter")
 
 		@log = Logger.new(STDOUT)
 		@log.level = Logger::DEBUG
@@ -121,5 +121,5 @@ GET_FRIEND = true
 SERVER = "gaisq.cs.ccu.edu.tw"
 GATEWAY = "twitter1-nickhsutw.apigee.com"
 
-tc = TwitterCrawler.new(SERVER, GATEWAY, :threads => 50, :get_friend => GET_FRIEND)
+tc = TwitterCrawler.new(SERVER, GATEWAY, :threads => 20, :get_friend => GET_FRIEND)
 tc.start
