@@ -1,0 +1,9 @@
+INSTALL
+
+1. install RVM
+2. install ruby 1.9.2
+3. install bundle
+4. exec "bundlel install" in this dir
+5. change server ip
+
+After all, you can run "client.rb"

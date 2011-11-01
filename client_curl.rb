@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
-require "twitter"
+#require "twitter"
+require 'typhoeus'
 require "mongo"
 require "date"
 require "logger"
@@ -118,8 +119,8 @@ class TwitterCrawler
 end
 
 GET_FRIEND = true
-SERVER = "96.43.137.2"
+SERVER = "gaisq.cs.ccu.edu.tw"
 GATEWAY = "twitter1-nickhsutw.apigee.com"
 
-tc = TwitterCrawler.new(SERVER, GATEWAY, :threads => 20, :get_friend => GET_FRIEND)
+tc = TwitterCrawler.new(SERVER, GATEWAY, :threads => 50, :get_friend => GET_FRIEND)
 tc.start
