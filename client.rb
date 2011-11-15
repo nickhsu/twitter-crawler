@@ -34,7 +34,7 @@ class TwitterCrawler
 			threads << Thread.new {
 				start_fetch
 			}
-			sleep(10) # avoid get dup user data
+			sleep(20) # avoid get dup user data
 		end
 
 		threads.each do |t|
@@ -123,5 +123,5 @@ GET_FRIEND = true
 SERVER = "96.43.137.2"
 GATEWAY = "twitter1-nickhsutw.apigee.com"
 
-tc = TwitterCrawler.new(SERVER, GATEWAY, :threads => 20, :get_friend => GET_FRIEND)
+tc = TwitterCrawler.new(SERVER, GATEWAY, :threads => 10, :get_friend => GET_FRIEND)
 tc.start
