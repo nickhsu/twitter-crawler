@@ -2,7 +2,7 @@
 
 require "mongo"
 
-SERVER = 'gaisq.cs.ccu.edu.tw'
+SERVER = "96.43.137.2"
 
 db = Mongo::Connection.new(SERVER).db("twitter")
 

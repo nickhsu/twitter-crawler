@@ -62,11 +62,13 @@ class TwitterCrawler
 					{"in_process" => false}
 			]}
 			]}).limit(100).to_a
-			@db['user'].update(
-				{"id" => {"$in" => user_datas.map {|x| x['id']}}},
-				{"$set" => {'in_process' => true}},
-				{:multi => true}
-			)
+			
+			user_datas.each do |user_data|
+				@db['user'].update(
+					{"id" => user_data["id"]},
+					{"$set" => {'in_process' => true}},
+				)
+			end
 
 			user_datas.each do |user_data|	
 				begin
