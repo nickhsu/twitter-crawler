@@ -99,7 +99,8 @@ class TwitterCrawler
 
 					user_data['last_updated_at'] = Time.now
 					user_data['in_process'] = false
-					@db['user'].update({:id => user_data['id']}, user_data)
+					user_data.delete("_id")
+					@log.info @db['user'].update({:id => user_data['id']}, user_data, :safe => true)
 				rescue Twitter::Unauthorized => ex
 					@log.info ex.to_s
 
