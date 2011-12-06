@@ -34,7 +34,7 @@ class TwitterCrawler
 			threads << Thread.new {
 				start_fetch
 			}
-			sleep(20) # avoid get dup user data
+			sleep(10) # avoid get dup user data
 		end
 
 		threads.each do |t|
@@ -74,9 +74,11 @@ class TwitterCrawler
 				begin
 					if @opts[:get_friend]
 						@log.info "get friends id = #{user_data["id"]}"
+						batch = Array.new
 						Twitter.friend_ids(user_data["id"])['ids'].each do |friend_id|
-							@db['user'].insert({:id => friend_id})
+							batch.push({:id => friend_id})
 						end
+						@db['user'].insert(batch)
 					end
 
 					@log.info "get posts id = #{user_data["id"]}"
