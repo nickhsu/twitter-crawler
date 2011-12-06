@@ -122,7 +122,7 @@ class TwitterCrawler
 end
 
 GET_FRIEND = true
-SERVER = "96.43.137.2"
+SERVER = "173.44.135.114"
 GATEWAY = "twitter1-nickhsutw.apigee.com"
 
 tc = TwitterCrawler.new(SERVER, GATEWAY, :threads => 10, :get_friend => GET_FRIEND)
